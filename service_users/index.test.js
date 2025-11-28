@@ -172,14 +172,16 @@ describe('User Service Tests', () => {
       expect(response.body.error.code).toBe('UNAUTHORIZED');
     });
 
-    test('Доступ к защищённому пути с невалидным токеном - ожидаем отказ', async () => {
+    test('Доступ к защищённому пути с невалидным токеном - ожидаем отказ (обрабатывается на уровне gateway)', async () => {
       const response = await request(app)
         .get('/v1/users/me')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('INVALID_TOKEN');
+      // User Service не проверяет JWT, поэтому при отсутствии X-User-Id
+      // он возвращает UNAUTHORIZED. Проверка INVALID_TOKEN происходит в gateway.
+      expect(response.body.error.code).toBe('UNAUTHORIZED');
     });
 
     test('Доступ к защищённому пути с валидным токеном через заголовки - ожидаем успех', async () => {
