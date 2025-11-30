@@ -2,23 +2,40 @@ services:
   api_gateway:
     build: api_gateway
     ports:
-      - "8000:8000"
+      - "${API_GATEWAY_PORT:-8000}:8000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=8000
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PINO_PRETTY=${PINO_PRETTY:-false}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - USERS_SERVICE_URL=${USERS_SERVICE_URL:-http://service_users:8000}
+      - ORDERS_SERVICE_URL=${ORDERS_SERVICE_URL:-http://service_orders:8000}
     networks:
       - app-network
 
   service_users:
     build: service_users
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=8000
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PINO_PRETTY=${PINO_PRETTY:-false}
     networks:
       - app-network
 
   service_orders:
     build: service_orders
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=8000
+      - JWT_SECRET=${JWT_SECRET}
+      - USERS_SERVICE_URL=${USERS_SERVICE_URL:-http://service_users:8000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PINO_PRETTY=${PINO_PRETTY:-false}
     networks:
       - app-network
 

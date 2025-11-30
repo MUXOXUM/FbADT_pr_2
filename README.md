@@ -96,13 +96,15 @@ docker-compose up --build
 
 ### Переменные окружения
 
-Для production рекомендуется установить следующие переменные:
+Создайте файл `.env` в корне проекта с необходимыми переменными окружения. Пример содержимого находится в `docs/ENV.md`.
 
-```bash
-JWT_SECRET=your-secret-key-change-in-production
-LOG_LEVEL=info
-NODE_ENV=production
-```
+**Важно:** Обязательно установите свой уникальный `JWT_SECRET` перед запуском в production!
+
+Для production рекомендуется:
+- `NODE_ENV=production`
+- `PINO_PRETTY=false`
+- `LOG_LEVEL=info` или `warn`
+- Установите собственный сильный `JWT_SECRET`
 
 ### Тестовый администратор
 
@@ -149,3 +151,30 @@ npm test
 - Список своих заказов с пагинацией - ожидаем корректные поля и навигацию по страницам
 - Попытка обновить чужой заказ - ожидаем отказ
 - Отмена собственного заказа - ожидаем статус отменён и отсутствие побочных эффектов
+
+# Переменные окружения (.env)
+
+Создайте файл `.env` в корне проекта (он уже добавлен в `.gitignore`, поэтому не попадёт в репозиторий) со значениями по вашему окружению.
+
+Пример содержимого:
+```
+NODE_ENV=development
+LOG_LEVEL=info
+PINO_PRETTY=false
+
+# Безопасный ключ для подписи JWT (обязательно заменить на уникальный)
+JWT_SECRET=change-me-please
+
+# Базовые URL сервисов
+USERS_SERVICE_URL=http://service_users:8000
+ORDERS_SERVICE_URL=http://service_orders:8000
+
+# Разрешённый origin для CORS (для разработки можно оставить *)
+CORS_ORIGIN=*
+```
+
+Для production:
+- `NODE_ENV=production`
+- `PINO_PRETTY=false`
+- `LOG_LEVEL=info` или `warn`
+- Установите собственный сильный `JWT_SECRET`
