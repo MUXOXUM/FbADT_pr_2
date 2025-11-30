@@ -1,14 +1,15 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { app, usersDb } = require('./index');
+const { app } = require('./index');
+const { clearDatabase, createUser } = require('./database/users');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 describe('User Service Tests', () => {
   beforeEach(() => {
     // Clear database before each test
-    Object.keys(usersDb).forEach(key => delete usersDb[key]);
+    clearDatabase();
   });
 
   describe('POST /v1/users/register', () => {
@@ -98,7 +99,7 @@ describe('User Service Tests', () => {
       // Создаем пользователя для тестов входа
       const passwordHash = await bcrypt.hash('password123', 10);
       const userId = require('uuid').v4();
-      usersDb[userId] = {
+      createUser({
         id: userId,
         email: 'test@example.com',
         passwordHash,
@@ -106,7 +107,7 @@ describe('User Service Tests', () => {
         roles: ['user'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
+      });
     });
 
     test('Вход с правильными данными - ожидаем выдачу токена', async () => {
@@ -188,7 +189,7 @@ describe('User Service Tests', () => {
       // Создаем пользователя
       const passwordHash = await bcrypt.hash('password123', 10);
       const userId = require('uuid').v4();
-      usersDb[userId] = {
+      createUser({
         id: userId,
         email: 'test@example.com',
         passwordHash,
@@ -196,7 +197,7 @@ describe('User Service Tests', () => {
         roles: ['user'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
+      });
 
       // Имитируем заголовки от gateway
       const response = await request(app)
@@ -215,7 +216,7 @@ describe('User Service Tests', () => {
     test('Получение профиля авторизованного пользователя - ожидаем успех', async () => {
       const passwordHash = await bcrypt.hash('password123', 10);
       const userId = require('uuid').v4();
-      usersDb[userId] = {
+      createUser({
         id: userId,
         email: 'test@example.com',
         passwordHash,
@@ -223,7 +224,7 @@ describe('User Service Tests', () => {
         roles: ['user'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
+      });
 
       const response = await request(app)
         .get('/v1/users/me')
@@ -243,7 +244,7 @@ describe('User Service Tests', () => {
     test('Обновление профиля авторизованного пользователя - ожидаем успех', async () => {
       const passwordHash = await bcrypt.hash('password123', 10);
       const userId = require('uuid').v4();
-      usersDb[userId] = {
+      createUser({
         id: userId,
         email: 'test@example.com',
         passwordHash,
@@ -251,7 +252,7 @@ describe('User Service Tests', () => {
         roles: ['user'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
+      });
 
       const updateData = {
         name: 'Updated Name'

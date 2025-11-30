@@ -1,6 +1,7 @@
 const request = require('supertest');
 const axios = require('axios');
-const { app, ordersDb } = require('./index');
+const { app } = require('./index');
+const { clearDatabase, createOrder, getOrderById } = require('./database/orders');
 const { v4: uuidv4 } = require('uuid');
 
 // Mock axios for user verification
@@ -11,7 +12,7 @@ describe('Order Service Tests', () => {
 
   beforeEach(() => {
     // Clear database before each test
-    Object.keys(ordersDb).forEach(key => delete ordersDb[key]);
+    clearDatabase();
     
     // Generate test user IDs
     userId1 = uuidv4();
@@ -131,7 +132,7 @@ describe('Order Service Tests', () => {
       // Создаем заказ
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [
@@ -145,7 +146,7 @@ describe('Order Service Tests', () => {
         total: 201.00,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .get(`/v1/orders/${orderId}`)
@@ -176,7 +177,7 @@ describe('Order Service Tests', () => {
       // Создаем заказ для userId1
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [
@@ -190,7 +191,7 @@ describe('Order Service Tests', () => {
         total: 100.50,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       // Пытаемся получить заказ от имени userId2
       const response = await request(app)
@@ -212,7 +213,7 @@ describe('Order Service Tests', () => {
       // Заказы для userId1
       for (let i = 0; i < 5; i++) {
         const orderId = uuidv4();
-        ordersDb[orderId] = {
+        createOrder({
           id: orderId,
           userId: userId1,
           items: [{ product: `Товар ${i}`, quantity: 1, price: 100 }],
@@ -220,13 +221,13 @@ describe('Order Service Tests', () => {
           total: 100,
           createdAt: new Date(Date.now() - i * 1000).toISOString(),
           updatedAt: new Date(Date.now() - i * 1000).toISOString()
-        };
+        });
       }
 
       // Заказы для userId2
       for (let i = 0; i < 3; i++) {
         const orderId = uuidv4();
-        ordersDb[orderId] = {
+        createOrder({
           id: orderId,
           userId: userId2,
           items: [{ product: `Товар ${i}`, quantity: 1, price: 200 }],
@@ -234,7 +235,7 @@ describe('Order Service Tests', () => {
           total: 200,
           createdAt: new Date(Date.now() - i * 1000).toISOString(),
           updatedAt: new Date(Date.now() - i * 1000).toISOString()
-        };
+        });
       }
     });
 
@@ -304,7 +305,7 @@ describe('Order Service Tests', () => {
       // Создаем заказ для userId1
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [{ product: 'Товар 1', quantity: 1, price: 100 }],
@@ -312,7 +313,7 @@ describe('Order Service Tests', () => {
         total: 100,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       // Пытаемся обновить статус от имени userId2
       const response = await request(app)
@@ -329,7 +330,7 @@ describe('Order Service Tests', () => {
     test('Обновление статуса заказа администратором - ожидаем успех', async () => {
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [{ product: 'Товар 1', quantity: 1, price: 100 }],
@@ -337,7 +338,7 @@ describe('Order Service Tests', () => {
         total: 100,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .patch(`/v1/orders/${orderId}/status`)
@@ -355,7 +356,7 @@ describe('Order Service Tests', () => {
     test('Отмена собственного заказа - ожидаем статус отменён и отсутствие побочных эффектов', async () => {
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [
@@ -369,7 +370,7 @@ describe('Order Service Tests', () => {
         total: 201.00,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .post(`/v1/orders/${orderId}/cancel`)
@@ -385,13 +386,13 @@ describe('Order Service Tests', () => {
       expect(response.body.data.items).toBeDefined();
       
       // Проверяем, что заказ действительно обновлен в базе
-      expect(ordersDb[orderId].status).toBe('cancelled');
+      expect(getOrderById(orderId).status).toBe('cancelled');
     });
 
     test('Отмена уже отмененного заказа - ожидаем ошибку', async () => {
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [{ product: 'Товар 1', quantity: 1, price: 100 }],
@@ -399,7 +400,7 @@ describe('Order Service Tests', () => {
         total: 100,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .post(`/v1/orders/${orderId}/cancel`)
@@ -414,7 +415,7 @@ describe('Order Service Tests', () => {
     test('Отмена выполненного заказа - ожидаем ошибку', async () => {
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [{ product: 'Товар 1', quantity: 1, price: 100 }],
@@ -422,7 +423,7 @@ describe('Order Service Tests', () => {
         total: 100,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .post(`/v1/orders/${orderId}/cancel`)
@@ -437,7 +438,7 @@ describe('Order Service Tests', () => {
     test('Отмена чужого заказа - ожидаем отказ', async () => {
       const orderId = uuidv4();
       const now = new Date().toISOString();
-      ordersDb[orderId] = {
+      createOrder({
         id: orderId,
         userId: userId1,
         items: [{ product: 'Товар 1', quantity: 1, price: 100 }],
@@ -445,7 +446,7 @@ describe('Order Service Tests', () => {
         total: 100,
         createdAt: now,
         updatedAt: now
-      };
+      });
 
       const response = await request(app)
         .post(`/v1/orders/${orderId}/cancel`)
